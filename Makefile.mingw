@@ -1,0 +1,6 @@
+main:
+	i686-w64-mingw32-gcc main.c grok.c --std=c99 -lm -o dspadpcm-encode.exe
+clean:
+	rm dspadpcm-encode.exe
+all:
+	clean main

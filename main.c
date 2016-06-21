@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <tgmath.h>
 
 void DSPCorrelateCoefs(short* source, int samples, short* coefs);
 void DSPEncodeFrame(short* source, int samples, unsigned char* dest, short* coefs);
@@ -11,10 +12,11 @@ void DSPEncodeFrame(short* source, int samples, unsigned char* dest, short* coef
 #define VOTE_ALLOC_COUNT 1024
 #define CORRELATE_SAMPLES 0x3800 /* 1024 packets */
 #define PACKET_SAMPLES 14
-
+/*
 #ifdef __linux__
 #define ALSA_PLAY 1
 #endif
+*/
 #if ALSA_PLAY
 #include <alsa/asoundlib.h>
 snd_pcm_t* ALSA_PCM;
@@ -43,6 +45,9 @@ struct dspadpcm_header
     uint16_t pad[11];
 };
 
+uint32_t samples_to_nibbles(uint32_t samples) {
+	return floor(samples * 16 / 14);
+}
 
 int main(int argc, char** argv)
 {
@@ -50,7 +55,7 @@ int main(int argc, char** argv)
 
     if (argc < 3)
     {
-        printf("Usage: dspenc <wavin> <dspout>\n");
+        printf("Usage: %s <wavin> <dspout> lstart lend\n", argv[0]);
         return 0;
     }
 
@@ -179,6 +184,16 @@ int main(int argc, char** argv)
     header.num_samples = __builtin_bswap32(packetCount * PACKET_SAMPLES);
     header.num_nibbles = __builtin_bswap32(packetCount * 16);
     header.sample_rate = __builtin_bswap32(samplerate);
+    /* Checking for loop points */
+    if (argc = 5) {
+        uint32_t lstart = strtol(argv[3], NULL, 10);
+        uint32_t lend = strtol(argv[4], NULL, 10);
+		printf("Loop Start = %d\nLoop End = %d", lend, lend);
+        header.loop_start = __builtin_bswap32(samples_to_nibbles(lstart));
+        header.loop_end = __builtin_bswap32(samples_to_nibbles(lend));
+		header.loop_flag = __builtin_bswap16(1);
+		
+	}
     for (i=0 ; i<16 ; ++i)
         header.coef[i] = __builtin_bswap16(coefs[i]);
     header.hist1 = __builtin_bswap16(samps[-1]);
